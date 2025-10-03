@@ -4,14 +4,96 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🎓 AI Personal Tutor - Free & Open Source</title>
+    
+    <!-- SEO & Social Meta Tags -->
+    <meta name="description" content="Free, privacy-first AI personal tutor running entirely in your browser. No API keys, no server, 100% local processing.">
+    <meta name="keywords" content="AI tutor, machine learning, education, privacy, WebLLM, Phi-3">
+    <meta name="author" content="AI Personal Tutor">
+    
+    <!-- Open Graph / Social Media -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="AI Personal Tutor - Learn Anything, Privately">
+    <meta property="og:description" content="Free AI-powered personal tutor with 100% privacy. No API keys needed.">
+    <meta property="og:url" content="https://ilyas-hassan.github.io/personal_tutor_app/">
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="AI Personal Tutor">
+    <meta name="twitter:description" content="Free, privacy-first AI tutor in your browser">
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#3b82f6">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="AI Tutor">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json">
+    
+    <!-- Icons -->
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+    <link rel="apple-touch-icon" href="/icon-192.png">
+    
+    <!-- Stylesheets -->
     <link rel="stylesheet" href="styles.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => {
+                        console.log('✅ Service Worker registered:', registration.scope);
+                        
+                        // Check for updates
+                        registration.addEventListener('updatefound', () => {
+                            const newWorker = registration.installing;
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    // New version available
+                                    if (confirm('New version available! Reload to update?')) {
+                                        newWorker.postMessage({ type: 'SKIP_WAITING' });
+                                        window.location.reload();
+                                    }
+                                }
+                            });
+                        });
+                    })
+                    .catch(error => {
+                        console.log('❌ Service Worker registration failed:', error);
+                    });
+            });
+            
+            // Handle service worker updates
+            let refreshing = false;
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (!refreshing) {
+                    refreshing = true;
+                    window.location.reload();
+                }
+            });
+        }
+    </script>
 </head>
 <body>
+    <!-- Install PWA Banner -->
+    <div id="installBanner" class="install-banner" style="display: none;">
+        <div class="install-content">
+            <span class="install-icon">📱</span>
+            <div class="install-text">
+                <strong>Install AI Tutor</strong>
+                <span>Add to your home screen for quick access</span>
+            </div>
+            <button id="installBtn" class="btn btn-primary btn-sm">Install</button>
+            <button id="dismissInstallBtn" class="btn-icon" aria-label="Dismiss">×</button>
+        </div>
+    </div>
+
     <!-- Loading Screen -->
-    <div id="loadingScreen" class="loading-screen">
+    <div id="loadingScreen" class="loading-screen" role="status" aria-live="polite">
         <div class="loading-content">
             <div class="logo">🎓</div>
             <h1>AI Personal Tutor</h1>
@@ -26,9 +108,9 @@
     </div>
 
     <!-- Main App -->
-    <div id="app" class="app-container" style="display: none;">
+    <div id="app" class="app-container" style="display: none;" role="application">
         <!-- Header -->
-        <header class="main-header">
+        <header class="main-header" role="banner">
             <div class="header-content">
                 <h1>🎓 AI Personal Tutor</h1>
                 <p class="subtitle">Powered by Phi-3-mini - Running 100% in your browser, completely free!</p>
@@ -44,7 +126,7 @@
         <!-- Main Content -->
         <div class="main-content">
             <!-- Sidebar -->
-            <aside class="sidebar">
+            <aside class="sidebar" role="complementary" aria-label="Session settings and controls">
                 <div class="sidebar-section">
                     <h3>📊 Session Info</h3>
                     <div id="sessionInfo" class="info-box">
@@ -97,7 +179,7 @@
             </aside>
 
             <!-- Chat Area -->
-            <main class="chat-container">
+            <main class="chat-container" role="main">
                 <!-- Welcome Screen -->
                 <div id="welcomeScreen" class="welcome-screen">
                     <div class="welcome-content">
@@ -151,7 +233,8 @@
                 </div>
 
                 <!-- Chat Messages -->
-                <div id="chatMessages" class="chat-messages" style="display: none;"></div>
+                <div id="chatMessages" class="chat-messages" style="display: none;" 
+                     role="log" aria-live="polite" aria-atomic="false" aria-relevant="additions"></div>
 
                 <!-- Chat Input -->
                 <div id="chatInputContainer" class="chat-input-container" style="display: none;">
@@ -162,11 +245,12 @@
                             class="chat-input" 
                             placeholder="Type your response or ask a question..."
                             autocomplete="off"
+                            aria-label="Chat message input"
                         >
-                        <button id="sendBtn" class="btn btn-primary">Send</button>
+                        <button id="sendBtn" class="btn btn-primary" aria-label="Send message">Send</button>
                     </div>
                     <div class="input-hints">
-                        <span class="hint">💡 Tip: Be specific with your questions for better learning</span>
+                        <span class="hint">💡 Tip: Press Enter to send, Shift+Enter for new line</span>
                     </div>
                 </div>
             </main>
