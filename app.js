@@ -42,6 +42,14 @@ const SYSTEM_PROMPT = `You are an expert AI tutor who creates personalized, inte
 
 Remember: You're having a CONVERSATION, not delivering a lecture. One question or concept at a time!`;
 
+// Local storage keys
+const STORAGE_KEYS = {
+    SESSION: 'ai_tutor_session',
+    PREFERENCES: 'ai_tutor_preferences',
+    SETTINGS: 'ai_tutor_settings',
+    INSTALL_DISMISSED: 'ai_tutor_install_dismissed'
+};
+
 // Application state
 const state = {
     engine: null,
@@ -54,7 +62,8 @@ const state = {
     },
     settings: {
         temperature: 0.7
-    }
+    },
+    durationTimer: null
 };
 
 // DOM elements
@@ -81,8 +90,197 @@ const elements = {
     learningStyle: document.getElementById('learningStyle'),
     difficultyLevel: document.getElementById('difficultyLevel'),
     temperature: document.getElementById('temperature'),
-    tempValue: document.getElementById('tempValue')
+    tempValue: document.getElementById('tempValue'),
+    installBanner: document.getElementById('installBanner'),
+    installBtn: document.getElementById('installBtn'),
+    dismissInstallBtn: document.getElementById('dismissInstallBtn')
 };
+
+// PWA Install prompt
+let deferredPrompt = null;
+
+// ============================================================================
+// UTILITY FUNCTIONS
+// ============================================================================
+
+// Show toast notification
+function showToast(message, type = 'success', duration = 3000) {
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    
+    const icons = {
+        success: '✅',
+        error: '❌',
+        warning: '⚠️'
+    };
+    
+    toast.innerHTML = `
+        <span class="toast-icon">${icons[type] || '📝'}</span>
+        <span class="toast-message">${message}</span>
+        <button class="toast-close" aria-label="Close">×</button>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    // Close button
+    toast.querySelector('.toast-close').addEventListener('click', () => {
+        toast.remove();
+    });
+    
+    // Auto remove
+    if (duration > 0) {
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            setTimeout(() => toast.remove(), 300);
+        }, duration);
+    }
+}
+
+// ============================================================================
+// LOCAL STORAGE FUNCTIONS
+// ============================================================================
+
+// Save session to localStorage
+function saveSession() {
+    try {
+        const sessionData = {
+            messages: state.messages,
+            currentTopic: state.currentTopic,
+            sessionStartTime: state.sessionStartTime,
+            lastUpdated: Date.now()
+        };
+        localStorage.setItem(STORAGE_KEYS.SESSION, JSON.stringify(sessionData));
+    } catch (error) {
+        console.error('Failed to save session:', error);
+    }
+}
+
+// Load session from localStorage
+function loadSession() {
+    try {
+        const sessionData = localStorage.getItem(STORAGE_KEYS.SESSION);
+        if (sessionData) {
+            const parsed = JSON.parse(sessionData);
+            
+            // Check if session is less than 24 hours old
+            const age = Date.now() - (parsed.lastUpdated || 0);
+            if (age < 24 * 60 * 60 * 1000) {
+                return parsed;
+            }
+        }
+    } catch (error) {
+        console.error('Failed to load session:', error);
+    }
+    return null;
+}
+
+// Save preferences to localStorage
+function savePreferences() {
+    try {
+        localStorage.setItem(STORAGE_KEYS.PREFERENCES, JSON.stringify(state.learningPreferences));
+    } catch (error) {
+        console.error('Failed to save preferences:', error);
+    }
+}
+
+// Load preferences from localStorage
+function loadPreferences() {
+    try {
+        const prefs = localStorage.getItem(STORAGE_KEYS.PREFERENCES);
+        if (prefs) {
+            return JSON.parse(prefs);
+        }
+    } catch (error) {
+        console.error('Failed to load preferences:', error);
+    }
+    return null;
+}
+
+// Save settings to localStorage
+function saveSettings() {
+    try {
+        localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(state.settings));
+    } catch (error) {
+        console.error('Failed to save settings:', error);
+    }
+}
+
+// Load settings from localStorage
+function loadSettings() {
+    try {
+        const settings = localStorage.getItem(STORAGE_KEYS.SETTINGS);
+        if (settings) {
+            return JSON.parse(settings);
+        }
+    } catch (error) {
+        console.error('Failed to load settings:', error);
+    }
+    return null;
+}
+
+// Clear all saved data
+function clearAllData() {
+    try {
+        localStorage.removeItem(STORAGE_KEYS.SESSION);
+        localStorage.removeItem(STORAGE_KEYS.PREFERENCES);
+        localStorage.removeItem(STORAGE_KEYS.SETTINGS);
+        showToast('All saved data cleared', 'success');
+    } catch (error) {
+        console.error('Failed to clear data:', error);
+        showToast('Failed to clear data', 'error');
+    }
+}
+
+// ============================================================================
+// PWA INSTALL HANDLING
+// ============================================================================
+
+// Handle PWA install prompt
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    
+    // Check if user dismissed the banner before
+    const dismissed = localStorage.getItem(STORAGE_KEYS.INSTALL_DISMISSED);
+    if (!dismissed) {
+        elements.installBanner.style.display = 'block';
+    }
+});
+
+// Install button click
+if (elements.installBtn) {
+    elements.installBtn.addEventListener('click', async () => {
+        if (deferredPrompt) {
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            
+            if (outcome === 'accepted') {
+                showToast('App installed successfully! 🎉', 'success');
+            }
+            
+            deferredPrompt = null;
+            elements.installBanner.style.display = 'none';
+        }
+    });
+}
+
+// Dismiss install banner
+if (elements.dismissInstallBtn) {
+    elements.dismissInstallBtn.addEventListener('click', () => {
+        elements.installBanner.style.display = 'none';
+        localStorage.setItem(STORAGE_KEYS.INSTALL_DISMISSED, 'true');
+    });
+}
+
+// Handle successful install
+window.addEventListener('appinstalled', () => {
+    showToast('App installed! You can now use it offline.', 'success');
+    elements.installBanner.style.display = 'none';
+});
+
+// ============================================================================
+// MODEL INITIALIZATION
+// ============================================================================
 
 // Check WebGPU support
 async function checkWebGPUSupport() {
@@ -94,8 +292,10 @@ async function checkWebGPUSupport() {
     return true;
 }
 
-// Initialize the AI model
-async function initializeModel() {
+// Initialize the AI model with retry logic
+async function initializeModel(retryCount = 0) {
+    const maxRetries = 3;
+    
     try {
         updateLoadingStatus('Checking browser compatibility...', 10);
         
@@ -122,12 +322,31 @@ async function initializeModel() {
             elements.loadingScreen.style.display = 'none';
             elements.app.style.display = 'flex';
             elements.modelStatus.textContent = 'Ready';
+            
+            // Load saved preferences and settings
+            loadSavedData();
+            
+            // Check for saved session
+            restoreSessionIfAvailable();
+            
+            showToast('AI Tutor ready! 🎓', 'success');
         }, 500);
 
     } catch (error) {
         console.error('Failed to initialize model:', error);
-        updateLoadingStatus(`Error: ${error.message}`, 0);
-        elements.compatibilityWarning.style.display = 'flex';
+        
+        if (retryCount < maxRetries) {
+            const retryDelay = Math.pow(2, retryCount) * 1000; // Exponential backoff
+            updateLoadingStatus(`Error loading model. Retrying in ${retryDelay/1000}s... (Attempt ${retryCount + 1}/${maxRetries})`, 0);
+            
+            setTimeout(() => {
+                initializeModel(retryCount + 1);
+            }, retryDelay);
+        } else {
+            updateLoadingStatus(`Error: ${error.message}`, 0);
+            elements.compatibilityWarning.style.display = 'flex';
+            showToast('Failed to load AI model after multiple attempts', 'error', 0);
+        }
     }
 }
 
@@ -136,6 +355,75 @@ function updateLoadingStatus(text, percent) {
     elements.loadingStatus.textContent = text;
     elements.loadingProgress.style.width = `${percent}%`;
 }
+
+// ============================================================================
+// DATA PERSISTENCE
+// ============================================================================
+
+// Load saved preferences and settings
+function loadSavedData() {
+    // Load preferences
+    const savedPrefs = loadPreferences();
+    if (savedPrefs) {
+        state.learningPreferences = savedPrefs;
+        elements.learningStyle.value = savedPrefs.style;
+        elements.difficultyLevel.value = savedPrefs.difficulty;
+    }
+    
+    // Load settings
+    const savedSettings = loadSettings();
+    if (savedSettings) {
+        state.settings = savedSettings;
+        elements.temperature.value = savedSettings.temperature;
+        elements.tempValue.textContent = savedSettings.temperature;
+    }
+}
+
+// Restore previous session
+function restoreSessionIfAvailable() {
+    const savedSession = loadSession();
+    
+    if (savedSession && savedSession.messages.length > 0) {
+        // Ask user if they want to restore
+        const restore = confirm('Would you like to restore your previous learning session?');
+        
+        if (restore) {
+            state.messages = savedSession.messages;
+            state.currentTopic = savedSession.currentTopic;
+            state.sessionStartTime = savedSession.sessionStartTime;
+            
+            // Update UI
+            elements.welcomeScreen.style.display = 'none';
+            elements.chatMessages.style.display = 'flex';
+            elements.chatInputContainer.style.display = 'block';
+            elements.currentTopic.textContent = state.currentTopic;
+            elements.topicDisplay.style.display = 'block';
+            elements.durationDisplay.style.display = 'block';
+            
+            // Restore messages
+            state.messages.forEach(msg => {
+                if (msg.role !== 'system') {
+                    addMessage(msg.role, msg.content);
+                }
+            });
+            
+            // Start duration timer
+            startDurationTimer();
+            
+            // Focus input
+            elements.chatInput.focus();
+            
+            showToast('Session restored successfully', 'success');
+        } else {
+            // Clear old session
+            localStorage.removeItem(STORAGE_KEYS.SESSION);
+        }
+    }
+}
+
+// ============================================================================
+// SESSION MANAGEMENT
+// ============================================================================
 
 // Format time duration
 function formatDuration(ms) {
@@ -157,6 +445,14 @@ function updateSessionDuration() {
     }
 }
 
+// Start duration timer
+function startDurationTimer() {
+    if (state.durationTimer) {
+        clearInterval(state.durationTimer);
+    }
+    state.durationTimer = setInterval(updateSessionDuration, 1000);
+}
+
 // Start learning session
 async function startLearningSession(topic) {
     if (!topic.trim()) return;
@@ -174,7 +470,10 @@ async function startLearningSession(topic) {
     elements.durationDisplay.style.display = 'block';
 
     // Start duration timer
-    setInterval(updateSessionDuration, 1000);
+    startDurationTimer();
+
+    // Save session
+    saveSession();
 
     // Create initial prompt
     const learningStyle = state.learningPreferences.style;
@@ -190,10 +489,19 @@ Please start by greeting me warmly and asking me ONE question to assess my curre
 
     // Generate response (don't show this initial prompt to user)
     await generateResponse(initialPrompt, true);
+    
+    // Focus input
+    elements.chatInput.focus();
 }
 
-// Generate AI response
-async function generateResponse(userMessage, isInitialPrompt = false) {
+// ============================================================================
+// AI RESPONSE GENERATION
+// ============================================================================
+
+// Generate AI response with error handling
+async function generateResponse(userMessage, isInitialPrompt = false, retryCount = 0) {
+    const maxRetries = 2;
+    
     // Add user message to UI only if it's not the initial system prompt
     if (!isInitialPrompt) {
         addMessage('user', userMessage);
@@ -234,16 +542,31 @@ async function generateResponse(userMessage, isInitialPrompt = false) {
         state.messages.push({ role: 'user', content: userMessage });
         state.messages.push({ role: 'assistant', content: assistantMessage });
 
+        // Save session
+        saveSession();
+
         // Add assistant message to UI
         addMessage('assistant', assistantMessage);
 
         elements.modelStatus.textContent = 'Ready';
+        
+        // Return focus to input
+        elements.chatInput.focus();
 
     } catch (error) {
         console.error('Error generating response:', error);
         typingDiv.remove();
-        addMessage('assistant', '❌ Sorry, I encountered an error. Please try again.');
-        elements.modelStatus.textContent = 'Error';
+        
+        if (retryCount < maxRetries) {
+            showToast(`Error generating response. Retrying... (${retryCount + 1}/${maxRetries})`, 'warning');
+            setTimeout(() => {
+                generateResponse(userMessage, isInitialPrompt, retryCount + 1);
+            }, 1000);
+        } else {
+            addMessage('assistant', '❌ Sorry, I encountered an error generating a response. Please try rephrasing your question or starting a new session.');
+            elements.modelStatus.textContent = 'Error';
+            showToast('Failed to generate response after multiple attempts', 'error');
+        }
     }
 }
 
@@ -328,39 +651,96 @@ function formatMarkdown(text) {
     return formatted;
 }
 
+// ============================================================================
+// EXPORT FUNCTIONALITY
+// ============================================================================
+
 // Export chat history
 function exportChat() {
     if (state.messages.length === 0) {
-        alert('No chat history to export!');
+        showToast('No chat history to export!', 'warning');
         return;
     }
 
-    const chatText = state.messages.map(msg => {
-        const role = msg.role === 'user' ? 'You' : 'AI Tutor';
-        return `${role}: ${msg.content}\n\n`;
-    }).join('');
+    const exportData = {
+        topic: state.currentTopic,
+        date: new Date().toISOString(),
+        duration: formatDuration(Date.now() - state.sessionStartTime),
+        preferences: state.learningPreferences,
+        messages: state.messages.map(msg => ({
+            role: msg.role === 'user' ? 'You' : 'AI Tutor',
+            content: msg.content
+        }))
+    };
 
-    const blob = new Blob([chatText], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `tutor-session-${state.currentTopic || 'chat'}-${new Date().toISOString().split('T')[0]}.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
+    // Create both JSON and text formats
+    const jsonBlob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const textContent = `AI Personal Tutor - Learning Session
+Topic: ${state.currentTopic}
+Date: ${new Date().toLocaleDateString()}
+Duration: ${formatDuration(Date.now() - state.sessionStartTime)}
+
+${state.messages.map(msg => {
+    const role = msg.role === 'user' ? 'You' : 'AI Tutor';
+    return `${role}:\n${msg.content}\n`;
+}).join('\n')}
+
+---
+All learning stays on your device. Nothing is sent to any server.
+Generated by AI Personal Tutor - https://github.com/ilyas-hassan/personal_tutor_app`;
+
+    const textBlob = new Blob([textContent], { type: 'text/plain' });
+    
+    // Download both files
+    const timestamp = new Date().toISOString().split('T')[0];
+    
+    // JSON export
+    const jsonUrl = URL.createObjectURL(jsonBlob);
+    const jsonLink = document.createElement('a');
+    jsonLink.href = jsonUrl;
+    jsonLink.download = `tutor-session-${state.currentTopic || 'chat'}-${timestamp}.json`;
+    jsonLink.click();
+    URL.revokeObjectURL(jsonUrl);
+    
+    // Text export
+    setTimeout(() => {
+        const textUrl = URL.createObjectURL(textBlob);
+        const textLink = document.createElement('a');
+        textLink.href = textUrl;
+        textLink.download = `tutor-session-${state.currentTopic || 'chat'}-${timestamp}.txt`;
+        textLink.click();
+        URL.revokeObjectURL(textUrl);
+    }, 100);
+    
+    showToast('Chat exported successfully!', 'success');
 }
+
+// ============================================================================
+// SESSION CONTROL
+// ============================================================================
 
 // New session
 function newSession() {
     if (state.messages.length > 0) {
-        if (!confirm('Are you sure you want to start a new session? Current progress will be lost.')) {
+        if (!confirm('Are you sure you want to start a new session? Current progress will be lost unless you export it first.')) {
             return;
         }
     }
 
+    // Clear timer
+    if (state.durationTimer) {
+        clearInterval(state.durationTimer);
+    }
+
+    // Clear session from storage
+    localStorage.removeItem(STORAGE_KEYS.SESSION);
+
+    // Reset state
     state.messages = [];
     state.currentTopic = null;
     state.sessionStartTime = null;
 
+    // Reset UI
     elements.chatMessages.innerHTML = '';
     elements.chatMessages.style.display = 'none';
     elements.chatInputContainer.style.display = 'none';
@@ -368,9 +748,18 @@ function newSession() {
     elements.topicDisplay.style.display = 'none';
     elements.durationDisplay.style.display = 'none';
     elements.topicInput.value = '';
+    
+    // Focus topic input
+    elements.topicInput.focus();
+    
+    showToast('New session started', 'success');
 }
 
-// Event listeners
+// ============================================================================
+// EVENT LISTENERS
+// ============================================================================
+
+// Topic input
 elements.startLearningBtn.addEventListener('click', () => {
     const topic = elements.topicInput.value.trim();
     if (topic) {
@@ -392,9 +781,11 @@ document.querySelectorAll('.example-btn').forEach(btn => {
     btn.addEventListener('click', () => {
         const topic = btn.getAttribute('data-topic');
         elements.topicInput.value = topic;
+        elements.topicInput.focus();
     });
 });
 
+// Chat input
 elements.sendBtn.addEventListener('click', () => {
     const message = elements.chatInput.value.trim();
     if (message) {
@@ -403,7 +794,9 @@ elements.sendBtn.addEventListener('click', () => {
     }
 });
 
-elements.chatInput.addEventListener('keypress', (e) => {
+// Enhanced keyboard shortcuts
+elements.chatInput.addEventListener('keydown', (e) => {
+    // Enter to send (without Shift)
     if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
         const message = elements.chatInput.value.trim();
@@ -412,24 +805,76 @@ elements.chatInput.addEventListener('keypress', (e) => {
             elements.chatInput.value = '';
         }
     }
+    
+    // Shift+Enter for new line is default behavior
 });
 
+// Global keyboard shortcuts
+document.addEventListener('keydown', (e) => {
+    // Ctrl/Cmd + K: Focus chat input
+    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        if (elements.chatInput.style.display !== 'none') {
+            elements.chatInput.focus();
+        } else {
+            elements.topicInput.focus();
+        }
+    }
+    
+    // Ctrl/Cmd + N: New session
+    if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+        e.preventDefault();
+        newSession();
+    }
+    
+    // Ctrl/Cmd + E: Export
+    if ((e.ctrlKey || e.metaKey) && e.key === 'e') {
+        e.preventDefault();
+        exportChat();
+    }
+});
+
+// Session controls
 elements.newSessionBtn.addEventListener('click', newSession);
 elements.exportBtn.addEventListener('click', exportChat);
 
-// Learning preferences
+// Learning preferences (save on change)
 elements.learningStyle.addEventListener('change', (e) => {
     state.learningPreferences.style = e.target.value;
+    savePreferences();
+    showToast('Preferences saved', 'success', 2000);
 });
 
 elements.difficultyLevel.addEventListener('change', (e) => {
     state.learningPreferences.difficulty = e.target.value;
+    savePreferences();
+    showToast('Preferences saved', 'success', 2000);
 });
 
+// Settings (save on change)
 elements.temperature.addEventListener('input', (e) => {
     state.settings.temperature = parseFloat(e.target.value);
     elements.tempValue.textContent = e.target.value;
+    saveSettings();
 });
+
+// Auto-save session periodically
+setInterval(() => {
+    if (state.messages.length > 0) {
+        saveSession();
+    }
+}, 30000); // Save every 30 seconds
+
+// Save on page unload
+window.addEventListener('beforeunload', () => {
+    if (state.messages.length > 0) {
+        saveSession();
+    }
+});
+
+// ============================================================================
+// INITIALIZATION
+// ============================================================================
 
 // Initialize on page load
 window.addEventListener('DOMContentLoaded', () => {
