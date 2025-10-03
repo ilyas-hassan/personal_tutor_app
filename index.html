@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎓 AI Personal Tutor - Free & Open Source</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loadingScreen" class="loading-screen">
+        <div class="loading-content">
+            <div class="logo">🎓</div>
+            <h1>AI Personal Tutor</h1>
+            <div class="loading-spinner"></div>
+            <p id="loadingStatus">Initializing AI model...</p>
+            <div class="progress-container">
+                <div id="loadingProgress" class="progress-bar"></div>
+            </div>
+            <p class="loading-info">First load may take a few minutes to download the AI model (~2.4GB)</p>
+            <p class="loading-info">Subsequent loads will be much faster (cached locally)</p>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="app" class="app-container" style="display: none;">
+        <!-- Header -->
+        <header class="main-header">
+            <div class="header-content">
+                <h1>🎓 AI Personal Tutor</h1>
+                <p class="subtitle">Powered by Phi-3-mini - Running 100% in your browser, completely free!</p>
+                <div class="header-badges">
+                    <span class="badge">✨ No API Keys</span>
+                    <span class="badge">🔒 Privacy First</span>
+                    <span class="badge">🚀 Open Source</span>
+                    <span class="badge">💻 Runs Locally</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Sidebar -->
+            <aside class="sidebar">
+                <div class="sidebar-section">
+                    <h3>📊 Session Info</h3>
+                    <div id="sessionInfo" class="info-box">
+                        <p><strong>Status:</strong> <span id="modelStatus">Ready</span></p>
+                        <p><strong>Model:</strong> Phi-3-mini-4k</p>
+                        <p id="topicDisplay" style="display: none;"><strong>Topic:</strong> <span id="currentTopic"></span></p>
+                        <p id="durationDisplay" style="display: none;"><strong>Duration:</strong> <span id="sessionDuration">0:00</span></p>
+                    </div>
+                </div>
+
+                <div class="sidebar-section">
+                    <h3>🎯 Learning Preferences</h3>
+                    <div class="form-group">
+                        <label for="learningStyle">Learning Style:</label>
+                        <select id="learningStyle" class="form-control">
+                            <option value="balanced">Balanced</option>
+                            <option value="visual">Visual</option>
+                            <option value="auditory">Auditory</option>
+                            <option value="reading">Reading/Writing</option>
+                            <option value="kinesthetic">Kinesthetic</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="difficultyLevel">Difficulty Level:</label>
+                        <select id="difficultyLevel" class="form-control">
+                            <option value="beginner">Beginner</option>
+                            <option value="intermediate" selected>Intermediate</option>
+                            <option value="advanced">Advanced</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="sidebar-section">
+                    <h3>⚙️ Settings</h3>
+                    <div class="form-group">
+                        <label for="temperature">Creativity Level: <span id="tempValue">0.7</span></label>
+                        <input type="range" id="temperature" min="0" max="1" step="0.1" value="0.7" class="slider">
+                    </div>
+                </div>
+
+                <div class="sidebar-section">
+                    <button id="newSessionBtn" class="btn btn-secondary btn-block">🔄 New Session</button>
+                    <button id="exportBtn" class="btn btn-secondary btn-block">💾 Export Chat</button>
+                </div>
+
+                <div class="sidebar-section info-section">
+                    <h4>ℹ️ About This AI</h4>
+                    <p class="small-text">This tutor uses Microsoft's Phi-3-mini, a powerful 3.8B parameter model running entirely in your browser. No data is sent to any server - everything stays private on your device!</p>
+                </div>
+            </aside>
+
+            <!-- Chat Area -->
+            <main class="chat-container">
+                <!-- Welcome Screen -->
+                <div id="welcomeScreen" class="welcome-screen">
+                    <div class="welcome-content">
+                        <h2>Welcome to Your AI Personal Tutor! 🎓</h2>
+                        <p class="welcome-text">Get personalized, interactive learning on any topic - completely free and private.</p>
+                        
+                        <div class="features-grid">
+                            <div class="feature-card">
+                                <div class="feature-icon">🎯</div>
+                                <h3>Personalized Learning</h3>
+                                <p>Adaptive teaching that adjusts to your pace and style</p>
+                            </div>
+                            <div class="feature-card">
+                                <div class="feature-icon">🤔</div>
+                                <h3>Socratic Method</h3>
+                                <p>Learn through guided questions and discovery</p>
+                            </div>
+                            <div class="feature-card">
+                                <div class="feature-icon">🔄</div>
+                                <h3>Interactive Practice</h3>
+                                <p>Hands-on exercises and real-world applications</p>
+                            </div>
+                            <div class="feature-card">
+                                <div class="feature-icon">🔒</div>
+                                <h3>100% Private</h3>
+                                <p>All processing happens in your browser - no data leaves your device</p>
+                            </div>
+                        </div>
+
+                        <div class="topic-input-container">
+                            <h3>What would you like to learn today?</h3>
+                            <div class="input-group">
+                                <input 
+                                    type="text" 
+                                    id="topicInput" 
+                                    class="topic-input" 
+                                    placeholder="e.g., Machine Learning basics, Spanish grammar, Quantum physics..."
+                                    autocomplete="off"
+                                >
+                                <button id="startLearningBtn" class="btn btn-primary btn-large">🚀 Start Learning</button>
+                            </div>
+                            <div class="example-topics">
+                                <p>Try these examples:</p>
+                                <button class="example-btn" data-topic="Machine Learning fundamentals">Machine Learning fundamentals</button>
+                                <button class="example-btn" data-topic="Spanish conversational phrases">Spanish conversational phrases</button>
+                                <button class="example-btn" data-topic="Web Development with HTML and CSS">Web Development with HTML and CSS</button>
+                                <button class="example-btn" data-topic="Basic calculus concepts">Basic calculus concepts</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chat Messages -->
+                <div id="chatMessages" class="chat-messages" style="display: none;"></div>
+
+                <!-- Chat Input -->
+                <div id="chatInputContainer" class="chat-input-container" style="display: none;">
+                    <div class="input-group">
+                        <input 
+                            type="text" 
+                            id="chatInput" 
+                            class="chat-input" 
+                            placeholder="Type your response or ask a question..."
+                            autocomplete="off"
+                        >
+                        <button id="sendBtn" class="btn btn-primary">Send</button>
+                    </div>
+                    <div class="input-hints">
+                        <span class="hint">💡 Tip: Be specific with your questions for better learning</span>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Browser Compatibility Warning -->
+    <div id="compatibilityWarning" class="compatibility-warning" style="display: none;">
+        <div class="warning-content">
+            <h2>⚠️ Browser Not Supported</h2>
+            <p>This application requires WebGPU support to run the AI model in your browser.</p>
+            <p><strong>Recommended browsers:</strong></p>
+            <ul>
+                <li>Chrome 113+ (recommended)</li>
+                <li>Edge 113+</li>
+                <li>Opera 99+</li>
+            </ul>
+            <p>Please use one of these browsers and ensure WebGPU is enabled.</p>
+            <a href="https://webgpureport.org/" target="_blank" class="btn btn-primary">Check WebGPU Support</a>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module" src="app.js"></script>
+</body>
+</html>

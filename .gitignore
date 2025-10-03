@@ -1,0 +1,36 @@
+# Python files (old version - no longer needed)
+app.py
+requirements.txt
+tutor_sessions.db
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Cache directories
+.mypy_cache/
+.qodo/
+.streamlit/
+.pytest_cache/
+
+# Logs
+*.log
+
+# Deployment
+DEPLOYMENT_GUIDE.md
