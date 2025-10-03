@@ -1,0 +1,37 @@
+# GitHub Deployment Commands - Run these in order
+
+# Step 1: Commit the files
+git commit -m "Convert to browser-based AI tutor with WebLLM"
+
+# Step 2: Check if GitHub CLI is installed
+gh --version
+
+# If gh is installed, use these commands:
+# ==========================================
+
+# Step 3: Create GitHub repository
+gh repo create personal_tutor_app --public --source=. --description="Free AI Personal Tutor - No API Keys Required" --push
+
+# If you DON'T have gh CLI, use these manual steps instead:
+# =========================================================
+
+# Step 3 (Manual): Go to https://github.com/new
+# - Repository name: personal_tutor_app
+# - Description: Free AI Personal Tutor - No API Keys Required
+# - Make it Public
+# - Don't initialize with README
+# - Click "Create repository"
+
+# Step 4 (Manual): Add remote and push (replace YOUR_USERNAME with your actual GitHub username)
+git remote add origin https://github.com/YOUR_USERNAME/personal_tutor_app.git
+git push -u origin main
+
+# Step 5: Enable GitHub Pages
+# - Go to: https://github.com/YOUR_USERNAME/personal_tutor_app/settings/pages
+# - Source: Deploy from a branch
+# - Branch: main
+# - Folder: / (root)
+# - Click Save
+
+# Your app will be live at:
+# https://YOUR_USERNAME.github.io/personal_tutor_app/
