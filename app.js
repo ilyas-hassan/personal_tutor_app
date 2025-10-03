@@ -304,8 +304,9 @@ async function initializeModel(retryCount = 0) {
         updateLoadingStatus('Initializing AI engine...', 20);
         
         // Create engine with progress callback
+        // Using Llama-3-8B-Instruct for better instruction-following
         state.engine = await webllm.CreateMLCEngine(
-            "Phi-3-mini-4k-instruct-q4f16_1-MLC",
+            "Llama-3-8B-Instruct-q4f16_1-MLC",
             {
                 initProgressCallback: (progress) => {
                     const percent = Math.round(progress.progress * 100);
