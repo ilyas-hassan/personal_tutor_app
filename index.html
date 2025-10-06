@@ -113,12 +113,12 @@
         <header class="main-header" role="banner">
             <div class="header-content">
                 <h1>🎓 AI Personal Tutor</h1>
-                <p class="subtitle">Powered by Phi-3-mini - Running 100% in your browser, completely free!</p>
+                <p class="subtitle">Powered by Llama-3.1-8B - Structured courses with lessons, exercises & quizzes. 100% free and private!</p>
                 <div class="header-badges">
+                    <span class="badge">📚 Structured Courses</span>
+                    <span class="badge">🎯 Interactive Lessons</span>
                     <span class="badge">✨ No API Keys</span>
-                    <span class="badge">🔒 Privacy First</span>
-                    <span class="badge">🚀 Open Source</span>
-                    <span class="badge">💻 Runs Locally</span>
+                    <span class="badge">🔒 100% Private</span>
                 </div>
             </div>
         </header>
@@ -131,7 +131,7 @@
                     <h3>📊 Session Info</h3>
                     <div id="sessionInfo" class="info-box">
                         <p><strong>Status:</strong> <span id="modelStatus">Ready</span></p>
-                        <p><strong>Model:</strong> Llama-3-8B-Instruct</p>
+                        <p><strong>Model:</strong> Llama-3.1-8B-Instruct</p>
                         <p id="topicDisplay" style="display: none;"><strong>Topic:</strong> <span id="currentTopic"></span></p>
                         <p id="durationDisplay" style="display: none;"><strong>Duration:</strong> <span id="sessionDuration">0:00</span></p>
                     </div>
@@ -174,7 +174,7 @@
 
                 <div class="sidebar-section info-section">
                     <h4>ℹ️ About This AI</h4>
-                    <p class="small-text">This tutor uses Microsoft's Phi-3-mini, a powerful 3.8B parameter model running entirely in your browser. No data is sent to any server - everything stays private on your device!</p>
+                    <p class="small-text">Powered by Llama-3.1-8B-Instruct - creates structured courses with lessons, Socratic questions, exercises, and quizzes. Each topic gets a personalized curriculum that adapts to your pace. 100% private, runs in your browser!</p>
                 </div>
             </aside>
 
@@ -183,34 +183,34 @@
                 <!-- Welcome Screen -->
                 <div id="welcomeScreen" class="welcome-screen">
                     <div class="welcome-content">
-                        <h2>Welcome to Your AI Personal Tutor! 🎓</h2>
-                        <p class="welcome-text">Get personalized, interactive learning on any topic - completely free and private.</p>
-                        
+                        <h2>Master Any Topic with Your AI Tutor 🎓</h2>
+                        <p class="welcome-text">Get a personalized, structured course on any topic. Your AI tutor creates a complete curriculum, guides you lesson-by-lesson with exercises and quizzes!</p>
+
                         <div class="features-grid">
                             <div class="feature-card">
+                                <div class="feature-icon">📚</div>
+                                <h3>Structured Curriculum</h3>
+                                <p>Get a complete learning path from fundamentals to advanced</p>
+                            </div>
+                            <div class="feature-card">
                                 <div class="feature-icon">🎯</div>
-                                <h3>Personalized Learning</h3>
-                                <p>Adaptive teaching that adjusts to your pace and style</p>
+                                <h3>Interactive Lessons</h3>
+                                <p>Each lesson includes explanations, Socratic questions, and exercises</p>
                             </div>
                             <div class="feature-card">
-                                <div class="feature-icon">🤔</div>
-                                <h3>Socratic Method</h3>
-                                <p>Learn through guided questions and discovery</p>
-                            </div>
-                            <div class="feature-card">
-                                <div class="feature-icon">🔄</div>
-                                <h3>Interactive Practice</h3>
-                                <p>Hands-on exercises and real-world applications</p>
+                                <div class="feature-icon">✅</div>
+                                <h3>Progress at Your Pace</h3>
+                                <p>Control your learning speed - move on when ready or review when needed</p>
                             </div>
                             <div class="feature-card">
                                 <div class="feature-icon">🔒</div>
                                 <h3>100% Private</h3>
-                                <p>All processing happens in your browser - no data leaves your device</p>
+                                <p>Everything runs in your browser - your learning stays yours</p>
                             </div>
                         </div>
 
                         <div class="topic-input-container">
-                            <h3>What would you like to learn today?</h3>
+                            <h3>What do you want to master today?</h3>
                             <div class="input-group">
                                 <input 
                                     type="text" 
@@ -222,11 +222,13 @@
                                 <button id="startLearningBtn" class="btn btn-primary btn-large">🚀 Start Learning</button>
                             </div>
                             <div class="example-topics">
-                                <p>Try these examples:</p>
-                                <button class="example-btn" data-topic="Machine Learning fundamentals">Machine Learning fundamentals</button>
-                                <button class="example-btn" data-topic="Spanish conversational phrases">Spanish conversational phrases</button>
-                                <button class="example-btn" data-topic="Web Development with HTML and CSS">Web Development with HTML and CSS</button>
-                                <button class="example-btn" data-topic="Basic calculus concepts">Basic calculus concepts</button>
+                                <p>Popular topics:</p>
+                                <button class="example-btn" data-topic="How Neural Networks work">🧠 How Neural Networks work</button>
+                                <button class="example-btn" data-topic="Quantum Computing basics">⚛️ Quantum Computing basics</button>
+                                <button class="example-btn" data-topic="Python programming for beginners">🐍 Python programming</button>
+                                <button class="example-btn" data-topic="The French Revolution">🇫🇷 The French Revolution</button>
+                                <button class="example-btn" data-topic="How photosynthesis works">🌱 How photosynthesis works</button>
+                                <button class="example-btn" data-topic="Music theory fundamentals">🎵 Music theory</button>
                             </div>
                         </div>
                     </div>
